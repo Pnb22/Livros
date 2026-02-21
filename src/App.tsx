@@ -1,96 +1,81 @@
 import { useEffect, useState } from "react";
-
-interface Livro {
-  _id?: string;
-  titulo: string;
-  autor: string;
-}
-
-const API_URL = "https://crudcrud.com/api/c970be1ead8f4f97a792abae25701603/livros";
+import { Book } from "./types/Book";
+import BookForm from "./components/BookForm";
+import BookList from "./components/BookList";
+import { getBooks, addBook, deleteBook, updateBook } from "./services/bookService";
 
 function App() {
-  const [livros, setLivros] = useState<Livro[]>([]);
-  const [titulo, setTitulo] = useState("");
-  const [autor, setAutor] = useState("");
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    carregarLivros();
+    loadBooks();
   }, []);
 
-  async function carregarLivros() {
+  async function loadBooks() {
     try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-      setLivros(data);
-    } catch (error) {
-      console.error("Erro ao carregar livros:", error);
+      setLoading(true);
+      const response = await getBooks();
+      setBooks(response.data);
+    } catch (err) {
+      setError("Erro ao carregar livros. Verifique a URL da API.");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   }
 
-  async function adicionarLivro() {
-    if (!titulo || !autor) return;
-
-    const novoLivro = { titulo, autor };
-
+  async function handleAdd(book: Book) {
     try {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(novoLivro),
-      });
-
-      setTitulo("");
-      setAutor("");
-      carregarLivros();
-    } catch (error) {
-      console.error("Erro ao adicionar livro:", error);
+      await addBook(book);
+      await loadBooks();
+    } catch (err) {
+      setError("Erro ao adicionar livro.");
+      console.error(err);
     }
   }
 
-  async function removerLivro(id?: string) {
-    if (!id) return;
-
+  async function handleDelete(id: string) {
     try {
-      await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
-      });
+      await deleteBook(id);
+      await loadBooks();
+    } catch (err) {
+      setError("Erro ao remover livro.");
+      console.error(err);
+    }
+  }
 
-      carregarLivros();
-    } catch (error) {
-      console.error("Erro ao remover livro:", error);
+  async function handleToggleStatus(
+    id: string,
+    currentStatus: "Lido" | "Não lido"
+  ) {
+    const newStatus = currentStatus === "Lido" ? "Não lido" : "Lido";
+    const book = books.find((b) => b._id === id);
+    if (!book) return;
+    try {
+      await updateBook(id, { title: book.title, author: book.author, status: newStatus });
+      await loadBooks();
+    } catch (err) {
+      setError("Erro ao atualizar status.");
+      console.error(err);
     }
   }
 
   return (
     <div>
       <h1>Catálogo de Livros</h1>
-
-      <input
-        placeholder="Título"
-        value={titulo}
-        onChange={(e) => setTitulo(e.target.value)}
-      />
-
-      <input
-        placeholder="Autor"
-        value={autor}
-        onChange={(e) => setAutor(e.target.value)}
-      />
-
-      <button onClick={adicionarLivro}>Adicionar</button>
-
-      <ul>
-        {livros.map((livro) => (
-          <li key={livro._id}>
-            {livro.titulo} - {livro.autor}
-            <button onClick={() => removerLivro(livro._id)}>
-              Remover
-            </button>
-          </li>
-        ))}
-      </ul>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <BookForm onAdd={handleAdd} />
+      {loading ? (
+        <p>Carregando...</p>
+      ) : (
+        <BookList
+          books={books}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
+        />
+      )}
     </div>
   );
 }
