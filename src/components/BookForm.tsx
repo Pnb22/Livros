@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Book } from "../types/Book";
 
@@ -13,6 +12,7 @@ export default function BookForm({ onAdd }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim() || !author.trim()) return;
     onAdd({ title, author, status });
     setTitle("");
     setAuthor("");
@@ -33,7 +33,10 @@ export default function BookForm({ onAdd }: Props) {
         onChange={(e) => setAuthor(e.target.value)}
         required
       />
-      <select value={status} onChange={(e) => setStatus(e.target.value as any)}>
+      <select
+        value={status}
+        onChange={(e) => setStatus(e.target.value as "Lido" | "Não lido")}
+      >
         <option value="Lido">Lido</option>
         <option value="Não lido">Não lido</option>
       </select>
