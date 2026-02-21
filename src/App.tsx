@@ -3,6 +3,7 @@ import { Book } from "./types/Book";
 import BookForm from "./components/BookForm";
 import BookList from "./components/BookList";
 import { getBooks, addBook, deleteBook, updateBook } from "./services/bookService";
+import "./App.css";
 
 function App() {
   const [books, setBooks] = useState<Book[]>([]);
